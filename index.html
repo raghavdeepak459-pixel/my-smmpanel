@@ -3,63 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIIE PRO | New Order</title>
+    <title>VIIE PRO | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #050505; color: white; font-family: sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-btn { background: linear-gradient(to right, #22d3ee, #2563eb); }
+        .custom-scroll::-webkit-scrollbar { width: 0px; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="min-h-screen p-4">
+<body class="bg-[#050505] text-slate-200">
+    <div id="root"></div>
 
-    <div class="max-w-md mx-auto mt-10 text-center">
-        <h1 class="text-4xl font-black italic tracking-tighter uppercase">VIIE<span class="text-cyan-400">PRO</span></h1>
-        <p class="text-slate-500 text-[10px] mt-2 uppercase font-black tracking-widest">Hello, Admin_Viie</p>
-    </div>
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
 
-    <div class="max-w-md mx-auto mt-8 glass p-6 rounded-[32px] flex items-center gap-5">
-        <div class="bg-cyan-400/10 p-4 rounded-2xl text-cyan-400 text-2xl">
-            <i class="fa-solid fa-wallet"></i>
-        </div>
-        <div>
-            <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Your Funds</p>
-            <h3 class="text-3xl font-black tracking-tighter">₹1,00,000.00</h3>
-        </div>
-    </div>
+        function App() {
+            // --- CORE STATES ---
+            const [page, setPage] = useState('auth'); 
+            const [authMode, setAuthMode] = useState('login');
+            const [tab, setTab] = useState('new-order');
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(false);
 
-    <div class="max-w-md mx-auto mt-6 glass p-8 rounded-[40px] shadow-2xl">
-        <h2 class="text-2xl font-black mb-8 uppercase flex items-center gap-3 tracking-tighter">
-            <i class="fa-solid fa-bolt text-yellow-400"></i> New Boost
-        </h2>
+            // --- DATABASE ---
+            const [services] = useState([
+                { id: 101, category: 'followers', name: "IG Followers [Stable]", rate: 85, info: "Speed: 10k/day | Start: 0-1h" },
+                { id: 102, category: 'followers', name: "IG Followers [Non-Drop]", rate: 110, info: "Lifetime Refill | Instant" },
+                { id: 201, category: 'likes', name: "IG Real Likes [HQ]", rate: 25, info: "Instant | Real Accounts" },
+                { id: 301, category: 'views', name: "Reels Views [Viral]", rate: 4.5, info: "Explore Hit | 1M/day" }
+            ]);
 
-        <div class="space-y-6">
-            <div>
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
-                <select class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none text-sm mt-2">
-                    <option>Choose Service Type</option>
-                    <option>Instagram Followers</option>
-                </select>
-            </div>
+            const [orders, setOrders] = useState([
+                { id: 84512, service: "IG Followers Stable", link: "instagram.com/viie", qty: 1000, cost: 85, status: 'Completed', date: "2024-03-12" }
+            ]);
 
-            <div>
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Instagram URL / ID</label>
-                <input type="text" placeholder="Paste link here..." class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none text-sm mt-2">
-            </div>
+            // --- AUTH LOGIC ---
+            const handleAuth = (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const email = e.target.email.value;
+                const pass = e.target.password.value;
 
-            <button class="w-full gradient-btn py-5 rounded-3xl text-black font-black uppercase tracking-widest mt-4 shadow-lg active:scale-95 transition">
-                Confirm & Order
-            </button>
-        </div>
-    </div>
+                setTimeout(() => {
+                    if (email === 'admin@viie.com' && pass === 'admin123') {
+                        setUser({ username: 'admin_viie', balance: 100000, role: 'admin' });
+                        setPage('dashboard');
+                    } else {
+                        alert("Galt Email/Password! Demo ke liye use karein: admin@viie.com / admin123");
+                    }
+                    setLoading(false);
+                }, 800);
+            };
 
-    <div class="fixed bottom-6 left-6 right-6 glass rounded-[32px] px-8 py-5 flex justify-between shadow-2xl max-w-md mx-auto">
-        <i class="fa-solid fa-bolt text-cyan-400 text-xl"></i>
-        <i class="fa-solid fa-clock text-slate-600 text-xl"></i>
-        <i class="fa-solid fa-wallet text-slate-600 text-xl"></i>
-        <i class="fa-solid fa-user text-slate-600 text-xl"></i>
-    </div>
+            // --- ORDER LOGIC ---
+            const [selectedCat, setSelectedCat] = useState('');
+            const [selectedSer, setSelectedSer] = useState(null);
+            const [orderQty, setOrderQty] = useState(0);
 
+            const totalBill = useMemo(() => {
+                if (!selectedSer || !orderQty) return 0;
+                return (selectedSer.rate / 1000) * orderQty;
+            }, [selectedSer, orderQty]);
+
+            const handleNewOrder = (e) => {
+                e.preventDefault();
+                if (!selectedSer) return alert("Service select karein!");
+                if (user.balance < totalBill) return alert("Balance kam hai!");
+
+                const newOrder = {
+                    id: Math.floor(Math.random() * 90000) + 10000,
+                    service: selectedSer.name,
+                    link: e.target.link.value,
+                    qty: orderQty,
+                    cost: totalBill,
+                    status: 'Pending',
+                    date: new Date().toLocaleDateString()
+                };
+
+                setOrders([newOrder, ...orders]);
+                setUser({ ...user, balance: user.balance - totalBill });
+                alert("Order Lag Gya Bhai!");
+                e.target.reset();
+            };
+
+            if (page === 'auth') return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="w-full max-w-md bg-white/5 backdrop-blur-3xl border border-white/10 p-10 rounded-[40px] shadow-2xl">
+                        <div className="text-center mb-10">
+                            <h1 className="text-4xl font-black italic text-white uppercase tracking-tighter">VIIE<span className="text-cyan-400">PRO</span></h1>
+                            <p className="text-slate-500 text-[10px] mt-2 uppercase font-black tracking-widest">Authentication</p>
+                        </div>
+                        <form onSubmit={handleAuth} className="space-y-5">
+                            <input type="email" name="email" required className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-cyan-400" placeholder="Email (admin@viie.com)" />
+                            <input type="password" name="password" required className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-cyan-400" placeholder="Password (admin123)" />
+                            <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-600 py-4 rounded-2xl text-black font-black uppercase tracking-widest shadow-lg">{loading ? 'Loading...' : 'Sign In'}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen pb-24">
+                    {/* Header */}
+                    <div className="p-6 max-w-2xl mx-auto flex justify-between items-center mt-4">
+                        <div>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">{tab.replace('-', ' ')}</h2>
+                            <p className="text-[10px] text-slate-500 font-black uppercase">Hi, {user.username}</p>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-3">
+                            <i className="fas fa-wallet text-cyan-400"></i>
+                            <span className="font-black">₹{user.balance.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <main className="p-4 max-w-2xl mx-auto">
+                        {tab === 'new-order' && (
+                            <div className="fade-in bg-white/5 border border-white/10 rounded-[40px] p-8 shadow-2xl">
+                                <h2 className="text-xl font-black mb-6 uppercase flex items-center gap-3"><i className="fas fa-bolt text-yellow-400"></i> New Boost</h2>
+                                <form onSubmit={handleNewOrder} className="space-y-6">
+                                    <select className="w-full bg-black border border-white/10 p-4 rounded-2xl outline-none text-sm" onChange={(e) => setSelectedCat(e.target.value)}>
+                                        <option value="">Choose Category</option>
+                                        <option value="followers">Instagram Followers</option>
+                                        <option value="likes">Instagram Likes</option>
+                                    </select>
+                                    <select className="w-full bg-black border border-white/10 p-4 rounded-2xl outline-none text-sm" onChange={(e) => setSelectedSer(services.find(s => s.id == e.target.value))}>
+                                        <option value="">Select Service</option>
+                                        {selectedCat && services.filter(s => s.category === selectedCat).map(s => <option key={s.id} value={s.id}>{s.name} (₹{s.rate}/1k)</option>)}
+                                    </select>
+                                    <input name="link" required className="w-full bg-black border border-white/10 p-4 rounded-2xl outline-none text-sm" placeholder="Paste Link Here..." />
+                                    <input type="number" required className="w-full bg-black border border-white/10 p-4 rounded-2xl outline-none text-sm" placeholder="Quantity" onChange={(e) => setOrderQty(e.target.value)} />
+                                    
+                                    <div className="p-4 bg-cyan-400/10 rounded-2xl text-cyan-400 font-black text-center text-xl">
+                                        Total: ₹{totalBill.toFixed(2)}
+                                    </div>
+                                    <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-600 py-5 rounded-3xl text-black font-black uppercase tracking-widest shadow-xl">Confirm Order</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {tab === 'orders' && (
+                            <div className="fade-in space-y-4">
+                                <h2 className="text-xl font-black mb-6 uppercase">Order History</h2>
+                                {orders.map(o => (
+                                    <div key={o.id} className="bg-white/5 border border-white/10 p-5 rounded-3xl flex justify-between items-center">
+                                        <div>
+                                            <p className="font-bold text-sm">{o.service}</p>
+                                            <p className="text-[10px] text-slate-500 italic truncate w-40">{o.link}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-cyan-400 font-black">₹{o.cost}</p>
+                                            <span className="text-[8px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full uppercase">{o.status}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Bottom Nav */}
+                    <nav className="fixed bottom-6 left-6 right-6 bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-[32px] px-8 py-5 flex justify-between max-w-md mx-auto shadow-2xl">
+                        <button onClick={() => setTab('new-order')} className={tab === 'new-order' ? 'text-cyan-400' : 'text-slate-600'}><i className="fas fa-bolt text-xl"></i></button>
+                        <button onClick={() => setTab('orders')} className={tab === 'orders' ? 'text-cyan-400' : 'text-slate-600'}><i className="fas fa-clock text-xl"></i></button>
+                        <button onClick={() => setTab('funds')} className={tab === 'funds' ? 'text-cyan-400' : 'text-slate-600'}><i className="fas fa-wallet text-xl"></i></button>
+                        <button onClick={() => {setPage('auth'); setUser(null);}} className="text-red-500"><i className="fas fa-sign-out-alt text-xl"></i></button>
+                    </nav>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
