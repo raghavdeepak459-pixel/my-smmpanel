@@ -1,332 +1,65 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  PlusCircle, List, Wallet, Headset, LayoutDashboard, 
-  Users, Settings, LogOut, ShieldCheck, CheckCircle, Clock, 
-  Zap, Layers, Copy, MinusCircle, Check, X, RefreshCcw, Search, ExternalLink
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIIE PRO | New Order</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #050505; color: white; font-family: sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-btn { background: linear-gradient(to right, #22d3ee, #2563eb); }
+    </style>
+</head>
+<body class="min-h-screen p-4">
 
-const App = () => {
-  // --- CORE STATES ---
-  const [page, setPage] = useState('auth'); 
-  const [authMode, setAuthMode] = useState('login');
-  const [tab, setTab] = useState('new-order');
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState({});
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // --- ADMIN SETTINGS ---
-  const [siteSettings, setSiteSettings] = useState({
-    upiId: 'viieagency@okaxis',
-  });
-
-  // --- DATABASE ---
-  const [users, setUsers] = useState([
-    { id: 1, username: 'admin_viie', email: 'admin@viie.com', password: 'admin123', balance: 100000, role: 'admin' },
-    { id: 2, username: 'customer_pro', email: 'user@test.com', password: 'user123', balance: 1500, role: 'user' }
-  ]);
-
-  const [services] = useState([
-    { id: 101, category: 'followers', name: "IG Followers [Stable]", rate: 85, min: 100, max: 100000, info: "Speed: 10k/day | Start: 0-1h" },
-    { id: 102, category: 'followers', name: "IG Followers [Non-Drop]", rate: 110, min: 100, max: 50000, info: "Lifetime Refill | Instant" },
-    { id: 201, category: 'likes', name: "IG Real Likes [HQ]", rate: 25, min: 50, max: 200000, info: "Instant | Real Accounts" },
-    { id: 301, category: 'views', name: "Reels Views [Viral Boost]", rate: 4.5, min: 100, max: 1000000, info: "Explore Hit | 1M/day" }
-  ]);
-
-  const [orders, setOrders] = useState([
-    { id: 84512, service: "IG Followers Stable", link: "instagram.com/viie", qty: 1000, cost: 85, status: 'Completed', user: 'customer_pro', date: "2024-03-12" },
-    { id: 84515, service: "Reels Views Viral", link: "instagram.com/p/reel123", qty: 5000, cost: 22.5, status: 'Processing', user: 'customer_pro', date: "2024-03-13" }
-  ]);
-
-  // --- AUTH LOGIC ---
-  const handleAuth = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const email = e.target.email.value;
-    const pass = e.target.password.value;
-
-    setTimeout(() => {
-      if (authMode === 'login') {
-        const foundUser = users.find(u => u.email === email && u.password === pass);
-        if (foundUser) {
-          setUser(foundUser);
-          setPage('dashboard');
-        } else {
-          alert("Email ya password galat hai!");
-        }
-      } else {
-        const username = e.target.username.value;
-        const newUser = { id: users.length + 1, username, email, password: pass, balance: 0, role: 'user' };
-        setUsers([...users, newUser]);
-        alert("Account taiyar hai! Login karein.");
-        setAuthMode('login');
-      }
-      setLoading(false);
-    }, 800);
-  };
-
-  // --- ORDER LOGIC ---
-  const [selectedCat, setSelectedCat] = useState('');
-  const [selectedSer, setSelectedSer] = useState(null);
-  const [orderQty, setOrderQty] = useState(0);
-
-  const totalBill = useMemo(() => {
-    if (!selectedSer || !orderQty) return 0;
-    return (selectedSer.rate / 1000) * orderQty;
-  }, [selectedSer, orderQty]);
-
-  const handleNewOrder = (e) => {
-    e.preventDefault();
-    if (!selectedSer) return alert("Pehle service select karein!");
-    const link = e.target.link.value;
-    
-    if (user.balance < totalBill) return alert("Balance kam hai bhai!");
-
-    setLoading(true);
-    setTimeout(() => {
-      const newOrder = {
-        id: Math.floor(Math.random() * 90000) + 10000,
-        service: selectedSer.name,
-        link, qty: orderQty, cost: totalBill, status: 'Pending', user: user.username, date: new Date().toISOString().split('T')[0]
-      };
-      setOrders([newOrder, ...orders]);
-      const updatedUser = { ...user, balance: user.balance - totalBill };
-      setUser(updatedUser);
-      setUsers(users.map(u => u.id === user.id ? updatedUser : u));
-      setModalData(newOrder);
-      setShowModal(true);
-      setLoading(false);
-      setOrderQty(0);
-      e.target.reset();
-    }, 1200);
-  };
-
-  // --- ADMIN ACTIONS ---
-  const updateBalance = (uid, amt, type) => {
-    const val = parseFloat(amt);
-    if (isNaN(val)) return;
-    setUsers(prev => prev.map(u => {
-      if (u.id === uid) {
-        const newBal = type === 'add' ? u.balance + val : u.balance - val;
-        if (user.id === u.id) setUser(prevUser => ({ ...prevUser, balance: newBal }));
-        return { ...u, balance: newBal };
-      }
-      return u;
-    }));
-    alert(`Funds ${type === 'add' ? 'Added' : 'Deducted'} Successfully!`);
-  };
-
-  const updateOrderStatus = (oid, status) => {
-    setOrders(prev => prev.map(o => o.id === oid ? { ...o, status } : o));
-  };
-
-  // Filtered orders for search in History Tab
-  const filteredOrders = useMemo(() => {
-    const list = user?.role === 'admin' ? orders : orders.filter(o => o.user === user?.username);
-    if (!searchTerm) return list;
-    return list.filter(o => 
-      o.id.toString().includes(searchTerm) || 
-      o.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.link.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [orders, user, searchTerm]);
-
-  // --- COMPONENTS ---
-  const NavItem = ({ id, label, icon: Icon, color = 'cyan' }) => (
-    <button 
-      onClick={() => setTab(id)}
-      className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-300 ${tab === id ? (color === 'orange' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-cyan-400 text-black shadow-lg shadow-cyan-500/20') : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
-    >
-      <Icon size={18} />
-      <span className="text-[10px] uppercase font-black tracking-widest">{label}</span>
-    </button>
-  );
-
-  if (page === 'auth') return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4" style={{backgroundImage: 'radial-gradient(circle at center, #111827 0%, #050505 100%)'}}>
-      <div className="w-full max-w-md bg-white/5 backdrop-blur-3xl border border-white/10 p-10 rounded-[40px] shadow-2xl">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-black italic text-white uppercase tracking-tighter">VIIE<span className="text-cyan-400">PRO</span></h1>
-          <p className="text-slate-500 text-[10px] mt-2 uppercase font-black tracking-widest">{authMode === 'login' ? 'Authentication' : 'Registration'}</p>
-        </div>
-        <form onSubmit={handleAuth} className="space-y-5">
-          {authMode === 'signup' && <input name="username" required className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-cyan-400" placeholder="Full Username" />}
-          <input type="email" name="email" required className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-cyan-400" placeholder="Email" />
-          <input type="password" name="password" required className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-cyan-400" placeholder="Password" />
-          <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-600 py-4 rounded-2xl text-black font-black uppercase tracking-widest hover:scale-[1.02] transition shadow-lg shadow-cyan-500/20 mt-4">{loading ? 'Working...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}</button>
-        </form>
-        <div className="mt-8 text-center">
-          <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="text-slate-500 text-[10px] font-black hover:text-cyan-400 transition uppercase tracking-widest">{authMode === 'login' ? "New User? Signup" : "Member? Login"}</button>
-        </div>
-      </div>
+    <div class="max-w-md mx-auto mt-10 text-center">
+        <h1 class="text-4xl font-black italic tracking-tighter uppercase">VIIE<span class="text-cyan-400">PRO</span></h1>
+        <p class="text-slate-500 text-[10px] mt-2 uppercase font-black tracking-widest">Hello, Admin_Viie</p>
     </div>
-  );
 
-  return (
-    <div className="min-h-screen bg-[#050505] text-slate-200 flex flex-col lg:flex-row overflow-hidden font-sans">
-      
-      {/* SIDEBAR */}
-      <aside className="hidden lg:flex flex-col w-72 bg-[#080808] border-r border-white/5 p-8 h-screen sticky top-0">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-black italic text-white tracking-tighter uppercase">VIIE<span className="text-cyan-400 font-bold">PRO</span></h1>
+    <div class="max-w-md mx-auto mt-8 glass p-6 rounded-[32px] flex items-center gap-5">
+        <div class="bg-cyan-400/10 p-4 rounded-2xl text-cyan-400 text-2xl">
+            <i class="fa-solid fa-wallet"></i>
         </div>
-        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-2 custom-scroll">
-          <NavItem id="new-order" label="New Order" icon={Zap} />
-          <NavItem id="orders" label="Order History" icon={Clock} />
-          <NavItem id="services" label="Price List" icon={List} />
-          <NavItem id="funds" label="Add Funds" icon={Wallet} />
-          <NavItem id="support" label="Support" icon={Headset} />
-          
-          {user.role === 'admin' && (
-            <div className="mt-8 pt-8 border-t border-white/5 space-y-1.5">
-              <p className="text-[10px] font-black text-orange-500/50 uppercase tracking-widest mb-4 ml-4 italic">Owner Controls</p>
-              <NavItem id="admin-users" label="User Database" icon={Users} color="orange" />
-              <NavItem id="admin-orders" label="Master Orders" icon={ShieldCheck} color="orange" />
-              <NavItem id="admin-settings" label="Site Config" icon={Settings} color="orange" />
+        <div>
+            <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Your Funds</p>
+            <h3 class="text-3xl font-black tracking-tighter">₹1,00,000.00</h3>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto mt-6 glass p-8 rounded-[40px] shadow-2xl">
+        <h2 class="text-2xl font-black mb-8 uppercase flex items-center gap-3 tracking-tighter">
+            <i class="fa-solid fa-bolt text-yellow-400"></i> New Boost
+        </h2>
+
+        <div class="space-y-6">
+            <div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
+                <select class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none text-sm mt-2">
+                    <option>Choose Service Type</option>
+                    <option>Instagram Followers</option>
+                </select>
             </div>
-          )}
-        </nav>
-        <button onClick={() => {setPage('auth'); setUser(null);}} className="mt-8 flex items-center gap-4 p-4 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500/5 rounded-2xl transition"><LogOut size={18}/> Logout</button>
-      </aside>
 
-      {/* MOBILE NAV (Bottom Bar) */}
-      <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[1000] bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-[32px] px-8 py-5 flex justify-between shadow-2xl">
-        <button onClick={() => setTab('new-order')} className={tab === 'new-order' ? 'text-cyan-400' : 'text-slate-600'}><Zap/></button>
-        <button onClick={() => setTab('orders')} className={tab === 'orders' ? 'text-cyan-400' : 'text-slate-600'}><Clock/></button>
-        <button onClick={() => setTab('funds')} className={tab === 'funds' ? 'text-cyan-400' : 'text-slate-600'}><Wallet/></button>
-        {user.role === 'admin' && <button onClick={() => setTab('admin-users')} className={tab === 'admin-users' ? 'text-orange-400' : 'text-slate-600'}><Users/></button>}
-      </div>
+            <div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Instagram URL / ID</label>
+                <input type="text" placeholder="Paste link here..." class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none text-sm mt-2">
+            </div>
 
-      {/* MAIN VIEWPORT */}
-      <main className="flex-1 p-4 lg:p-12 pb-28 lg:pb-12 h-screen overflow-y-auto custom-scroll">
-        
-        {/* Statistics Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
-           <div>
-              <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{tab.replace('-', ' ')}</h2>
-              <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest mt-1">Hello, {user.username}</p>
-           </div>
-           <div className="bg-white/5 border border-white/5 p-5 rounded-[2.5rem] flex items-center gap-5 shadow-2xl min-w-[280px]">
-              <div className="bg-cyan-400/10 p-4 rounded-2xl text-cyan-400"><Wallet size={24}/></div>
-              <div>
-                 <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Your Funds</p>
-                 <h3 className="text-2xl font-black text-white tracking-tighter">₹{user.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
-              </div>
-           </div>
+            <button class="w-full gradient-btn py-5 rounded-3xl text-black font-black uppercase tracking-widest mt-4 shadow-lg active:scale-95 transition">
+                Confirm & Order
+            </button>
         </div>
+    </div>
 
-        {/* Tab Cards */}
-        <div className="bg-white/5 border border-white/5 rounded-[40px] p-8 lg:p-12 shadow-2xl min-h-[650px] relative overflow-hidden">
-           
-           {/* TAB: NEW ORDER */}
-           {tab === 'new-order' && (
-             <div className="fade-in max-w-2xl">
-               <h2 className="text-3xl font-black text-white mb-10 uppercase flex items-center gap-4 tracking-tighter"><Zap className="text-yellow-400" fill="currentColor"/> New Boost</h2>
-               <form onSubmit={handleNewOrder} className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
-                      <select className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-400 cursor-pointer appearance-none text-sm" onChange={(e) => {setSelectedCat(e.target.value); setSelectedSer(null); setOrderQty(0);}}>
-                         <option value="">Choose Service Type</option>
-                         <option value="followers">Instagram Followers</option>
-                         <option value="likes">Instagram Likes</option>
-                         <option value="views">Instagram Views</option>
-                      </select>
-                    </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Select Service</label>
-                      <select className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-400 cursor-pointer appearance-none text-sm" onChange={(e) => setSelectedSer(services.find(s => s.id == e.target.value))}>
-                         <option value="">Select Package</option>
-                         {selectedCat && services.filter(s => s.category === selectedCat).map(s => <option key={s.id} value={s.id}>{s.name} (₹{s.rate}/1k)</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {selectedSer && <div className="p-5 bg-cyan-400/5 border border-cyan-400/10 rounded-3xl text-xs text-slate-400 leading-relaxed italic border-l-4 border-l-cyan-400">
-                    <span className="font-bold text-cyan-400 uppercase tracking-widest mr-2">Info:</span>{selectedSer.info}
-                  </div>}
-                  
-                  <div className="space-y-3">
-                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Instagram URL / ID</label>
-                     <input name="link" required className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-400 text-white text-sm" placeholder="Paste link here..." />
-                  </div>
+    <div class="fixed bottom-6 left-6 right-6 glass rounded-[32px] px-8 py-5 flex justify-between shadow-2xl max-w-md mx-auto">
+        <i class="fa-solid fa-bolt text-cyan-400 text-xl"></i>
+        <i class="fa-solid fa-clock text-slate-600 text-xl"></i>
+        <i class="fa-solid fa-wallet text-slate-600 text-xl"></i>
+        <i class="fa-solid fa-user text-slate-600 text-xl"></i>
+    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Quantity</label>
-                       <input type="number" required className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-cyan-400 text-sm" placeholder="1000" onChange={(e) => setOrderQty(parseInt(e.target.value) || 0)} />
-                    </div>
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Grand Total</label>
-                       <div className="w-full bg-cyan-400/10 border border-cyan-400/30 p-5 rounded-2xl text-cyan-400 font-black text-3xl tracking-tighter">₹ {totalBill.toFixed(2)}</div>
-                    </div>
-                  </div>
-                  <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-600 py-6 rounded-3xl text-black font-black uppercase tracking-widest hover:scale-[1.01] transition shadow-2xl">Confirm & Order</button>
-               </form>
-             </div>
-           )}
-
-           {/* TAB: ORDER HISTORY (Upgraded) */}
-           {tab === 'orders' && (
-             <div className="fade-in">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-3"><Clock className="text-cyan-400"/> Order Tracking</h2>
-                  <div className="relative w-full md:w-80">
-                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                     <input 
-                      type="text" 
-                      placeholder="Search ID or Service..." 
-                      className="w-full bg-black/50 border border-white/10 p-4 pl-12 rounded-2xl outline-none focus:border-cyan-400 text-xs" 
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                     />
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left min-w-[700px]">
-                    <thead className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] border-b border-white/5">
-                      <tr>
-                        <th className="pb-4">ID</th>
-                        <th className="pb-4">Date</th>
-                        <th className="pb-4">Service Details</th>
-                        <th className="pb-4 text-center">Qty</th>
-                        <th className="pb-4 text-center">Status</th>
-                        <th className="pb-4 text-right">Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-[11px]">
-                      {filteredOrders.length > 0 ? filteredOrders.map(o => (
-                        <tr key={o.id} className="border-b border-white/5 hover:bg-white/[0.02] transition group">
-                          <td className="py-5 font-black text-slate-500">#{o.id}</td>
-                          <td className="py-5 text-slate-500">{o.date}</td>
-                          <td className="py-5">
-                            <p className="font-bold text-white group-hover:text-cyan-400 transition">{o.service}</p>
-                            <p className="text-[9px] text-slate-600 truncate max-w-[200px] flex items-center gap-1 mt-1 font-medium italic"><ExternalLink size={8}/> {o.link}</p>
-                          </td>
-                          <td className="py-5 text-center font-bold text-slate-300">{o.qty.toLocaleString()}</td>
-                          <td className="py-5 text-center">
-                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${o.status === 'Completed' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : o.status === 'Canceled' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>
-                              {o.status}
-                            </span>
-                          </td>
-                          <td className="py-5 text-right font-black text-cyan-400 text-sm tracking-tighter">₹{o.cost.toFixed(2)}</td>
-                        </tr>
-                      )) : (
-                        <tr><td colSpan="6" className="py-20 text-center text-slate-600 italic uppercase tracking-widest text-xs">No matching orders found...</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-             </div>
-           )}
-
-           {/* TAB: SERVICES */}
-           {tab === 'services' && (
-            <div className="fade-in">
-              <h2 className="text-2xl font-black text-white mb-10 uppercase flex items-center gap-3 tracking-tighter"><List className="text-cyan-400"/> Pricing Sheet</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {services.map(s => (
-                  <div key={s.id} className="bg-white/5 border border-white/5 p-6 rounded-3xl flex justify-between items-center hover:bg-white/10 transition border-l-4 border-l-cyan-400">
-                    <div>
-                      <p className="t
+</body>
+</html>
